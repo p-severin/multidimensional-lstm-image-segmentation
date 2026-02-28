@@ -11,9 +11,9 @@ if int(tf.__version__.split('.')[0]) >= 2:
         shapes = [a.get_shape().as_list() for a in args]
         for shape in shapes:
             if len(shape) != 2:
-                raise ValueError(f'Linear is expecting 2D arguments: {str(shapes)}')
+                raise ValueError(f'Linear is expecting 2D arguments: {shapes!s}')
             if not shape[1]:
-                raise ValueError(f'Linear expects shape[1] of arguments: {str(shapes)}')
+                raise ValueError(f'Linear expects shape[1] of arguments: {shapes!s}')
             else:
                 total_arg_size += shape[1]
 
