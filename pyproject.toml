@@ -24,6 +24,7 @@ dev = [
 [tool.ruff]
 target-version = "py311"
 line-length = 120
+src = ["src"]
 
 [tool.ruff.lint]
 select = [
@@ -54,6 +55,7 @@ quote-style = "single"
 [tool.pyright]
 pythonVersion = "3.11"
 typeCheckingMode = "basic"
+extraPaths = ["src"]
 reportMissingImports = "warning"
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
