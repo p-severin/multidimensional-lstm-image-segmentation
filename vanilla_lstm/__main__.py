@@ -1,4 +1,3 @@
-# generate a sequence of random numbers in [0, n_features)
 from random import randint
 
 import numpy as np
@@ -42,7 +41,3 @@ if __name__ == '__main__':
     model.add(Dense(n_features, activation='softmax'))
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     model.summary()
-
-# for i in range(10000):
-#     X, y = generate_example(length, n_features, out_index)
-#     yhat = model.fit(X, y, verbose=2)
