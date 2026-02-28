@@ -1,6 +1,5 @@
 import os
 from functools import partial
-from sys import platform
 from typing import ClassVar
 
 import matplotlib.pyplot as plt
@@ -10,33 +9,7 @@ from PIL import Image
 from skimage.util import view_as_windows
 from tensorflow.keras.utils import to_categorical
 
-
-def imresize(arr, size, interp='bilinear', mode=None):
-    if interp == 'nearest':
-        resample = Image.NEAREST
-    elif interp == 'bilinear':
-        resample = Image.BILINEAR
-    elif interp == 'bicubic':
-        resample = Image.BICUBIC
-    else:
-        resample = Image.BILINEAR
-
-    im = Image.fromarray(arr, mode=mode)
-    # PIL takes (width, height), but imresize assumed (height, width)
-    # Checking usage, if size is tuple, it is (height, width).
-    # If size is int/float, it is a scaling factor (not handled here but likely not used).
-    # Assuming size is (height, width) tuple.
-    width, height = size[1], size[0]
-    im = im.resize((width, height), resample=resample)
-    return np.array(im)
-
-
-if platform == 'linux':
-    directory_voc_dataset = '/home/pseweryn/Repositories/VOCdevkit/VOC2012'
-else:
-    directory_voc_dataset = (
-        '/Users/patrykseweryn/PycharmProjects/datasets/voc_dataset/VOCtrainval_11-May-2012/VOCdevkit/VOC2012'
-    )
+from single_lstm.data_generator import imresize
 
 
 class Dataset:
@@ -172,26 +145,7 @@ class Dataset:
 
 
 if __name__ == '__main__':
-    dataset = Dataset(directory_voc_dataset, 'train', [7])
-    # dataset.generate_images(-1)
-    # dataset.resize_images()
-    # dataset.transform_data_to_numpy_arrays()
-    # dataset.remove_classes_not_used()
-    # dataset.leave_images_of_one_class()
-    # dataset.prepare_input_data_X()
-    # dataset.create_flipped_windows()
-    # dataset.extract_patches_from_data()
-    # dataset.transform_data_to_numpy_arrays()
-    # dataset.one_hot_encode_y()
-
-    X, y = dataset.generate_data()
-
-    for image, segmentation in zip(X, y, strict=False):
-        plt.subplot(121)
-        plt.imshow(image)
-        plt.subplot(122)
-        plt.imshow(segmentation[:, :, 1])
-        plt.show()
-
-    print(X.shape)
-    print(y.shape)
+    data_dir = 'data/voc_2012_segmentation_data'
+    # Note: Dataset class still uses old VOC2012 structure (JPEGImages/, SegmentationClass/, ImageSets/)
+    # Use DataGenerator from single_lstm.data_generator for the new dataset format instead.
+    print('Dataset class is deprecated. Use single_lstm.data_generator.DataGenerator instead.')
