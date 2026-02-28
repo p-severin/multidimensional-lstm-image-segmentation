@@ -1,5 +1,9 @@
 import argparse
+import os
 from enum import Enum
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 from md_lstm.pipeline import main as train_md_lstm
 from single_lstm.pipeline import train as train_single_lstm

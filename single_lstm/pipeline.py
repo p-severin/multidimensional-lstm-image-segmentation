@@ -20,7 +20,7 @@ def train():
 
     model = build_model(dim[0], dim[1], 27)
     model.summary()
-    optimizer = Adam(learning_rate=10e-4)
+    optimizer = Adam(learning_rate=10e-4, clipnorm=5.0)
     model.compile(loss=class_weighted_pixelwise_crossentropy, optimizer=optimizer, metrics=['accuracy'])
 
     folder_to_save_models = 'models/single_lstm'
@@ -49,7 +49,10 @@ def train():
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig('./accuracy.png')
+    output_dir = 'output/single_lstm'
+    os.makedirs(output_dir, exist_ok=True)
+
+    plt.savefig(os.path.join(output_dir, 'accuracy.png'))
     plt.close()
 
     plt.plot(history.history['loss'])
@@ -58,7 +61,7 @@ def train():
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig('./loss.png')
+    plt.savefig(os.path.join(output_dir, 'loss.png'))
     plt.close()
 
 

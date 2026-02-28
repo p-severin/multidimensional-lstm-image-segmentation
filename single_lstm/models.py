@@ -1,6 +1,5 @@
 from tensorflow.keras import Input, Model
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import LSTM, Dense, Lambda, Permute, concatenate
+from tensorflow.keras.layers import LSTM, Dense, Permute, TimeDistributed, concatenate
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import plot_model
 
@@ -9,19 +8,6 @@ cols = 90
 channels = 27
 classes = 2
 hidden_size = 40
-
-
-def reshape_to_one_dimension(x):
-    return K.reshape(x, (-1, cols, channels))
-
-
-def reshape_to_one_dimension_hidden_size(x):
-    return K.reshape(x, (-1, cols, hidden_size))
-
-
-def reshape_to_two_dimensions(x):
-    batch = K.shape(x)[0] // rows
-    return K.reshape(x, (batch, rows, cols, -1))
 
 
 def get_model_with_layer(path, layername):
@@ -35,42 +21,24 @@ def get_model_with_layer(path, layername):
     return model
 
 
+def _build_branch(input_layer):
+    x = TimeDistributed(LSTM(hidden_size, return_sequences=True))(input_layer)
+    x = Permute((2, 1, 3))(x)
+    x = TimeDistributed(LSTM(hidden_size, return_sequences=True))(x)
+    x = Permute((2, 1, 3))(x)
+    return x
+
+
 def build_model(rows, cols, channels):
     input_x = Input(shape=(rows, cols, channels))
-    x = Lambda(reshape_to_one_dimension)(input_x)
-    x = LSTM(hidden_size, return_sequences=True)(x)
-    x = Lambda(reshape_to_two_dimensions)(x)
-    x = Permute((2, 1, 3))(x)
-    x = Lambda(reshape_to_one_dimension_hidden_size)(x)
-    x = LSTM(hidden_size, return_sequences=True)(x)
-    x = Lambda(reshape_to_two_dimensions)(x)
-
     input_xv = Input(shape=(rows, cols, channels))
-    xv = Lambda(reshape_to_one_dimension)(input_xv)
-    xv = LSTM(hidden_size, return_sequences=True)(xv)
-    xv = Lambda(reshape_to_two_dimensions)(xv)
-    xv = Permute((2, 1, 3))(xv)
-    xv = Lambda(reshape_to_one_dimension_hidden_size)(xv)
-    xv = LSTM(hidden_size, return_sequences=True)(xv)
-    xv = Lambda(reshape_to_two_dimensions)(xv)
-
     input_xh = Input(shape=(rows, cols, channels))
-    xh = Lambda(reshape_to_one_dimension)(input_xh)
-    xh = LSTM(hidden_size, return_sequences=True)(xh)
-    xh = Lambda(reshape_to_two_dimensions)(xh)
-    xh = Permute((2, 1, 3))(xh)
-    xh = Lambda(reshape_to_one_dimension_hidden_size)(xh)
-    xh = LSTM(hidden_size, return_sequences=True)(xh)
-    xh = Lambda(reshape_to_two_dimensions)(xh)
-
     input_xvh = Input(shape=(rows, cols, channels))
-    xvh = Lambda(reshape_to_one_dimension)(input_xvh)
-    xvh = LSTM(hidden_size, return_sequences=True)(xvh)
-    xvh = Lambda(reshape_to_two_dimensions)(xvh)
-    xvh = Permute((2, 1, 3))(xvh)
-    xvh = Lambda(reshape_to_one_dimension_hidden_size)(xvh)
-    xvh = LSTM(hidden_size, return_sequences=True)(xvh)
-    xvh = Lambda(reshape_to_two_dimensions)(xvh)
+
+    x = _build_branch(input_x)
+    xv = _build_branch(input_xv)
+    xh = _build_branch(input_xh)
+    xvh = _build_branch(input_xvh)
 
     merge_layer = concatenate([x, xv, xh, xvh])
     dense = Dense(classes, activation='softmax')(merge_layer)

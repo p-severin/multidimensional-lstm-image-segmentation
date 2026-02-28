@@ -2,7 +2,7 @@ import logging
 import os
 
 import matplotlib.pyplot as plt
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import tf_slim as slim
 
 from md_lstm.md_lstm_implementation import multi_dimensional_rnn_while_loop
@@ -18,7 +18,7 @@ DATA_DIR = 'data/voc_2012_segmentation_data'
 
 def train():
     learning_rate = 1e-3
-    batch_size = 2
+    batch_size = 4
     epochs = 5
     h = 96
     w = 96
@@ -26,6 +26,8 @@ def train():
     hidden_size = 40
     how_many_classes = 2
     eps = 1e-4
+    max_grad_norm = 5.0
+    class_weights = [0.3, 0.7]
     h_patches = h // 3
     w_patches = w // 3
 
@@ -77,11 +79,19 @@ def train():
         activation_fn=None,
     )
 
-    loss = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.cast(y, tf.float32), logits=model_logits)
-    )
+    weights = tf.constant(class_weights, dtype=tf.float32)
+    pixel_weights = tf.reduce_sum(y * weights, axis=-1)
+    per_pixel_loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.cast(y, tf.float32), logits=model_logits)
+    loss = tf.reduce_mean(per_pixel_loss * pixel_weights)
+
     model_output = tf.nn.softmax(model_logits)
-    grad_update = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+
+    optimizer = tf.train.AdamOptimizer(learning_rate)
+    grads_and_vars = optimizer.compute_gradients(loss)
+    clipped_grads_and_vars = [
+        (tf.clip_by_norm(g, max_grad_norm), v) if g is not None else (g, v) for g, v in grads_and_vars
+    ]
+    grad_update = optimizer.apply_gradients(clipped_grads_and_vars)
 
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
     sess.run(tf.global_variables_initializer())
@@ -133,7 +143,7 @@ def train():
                 plt.axis('off')
 
                 plt.tight_layout()
-                results_dir = 'results/md_lstm'
+                results_dir = 'output/md_lstm'
                 os.makedirs(results_dir, exist_ok=True)
                 plt.savefig(
                     os.path.join(results_dir, f'image_{epoch}_{step}.jpg'),

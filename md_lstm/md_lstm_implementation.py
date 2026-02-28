@@ -50,7 +50,7 @@ def ln(tensor, scope=None, epsilon=1e-5):
 class MultiDimensionalLSTMCell(RNNCell):
     """Adapted from TF's BasicLSTMCell to use Layer Normalization. state_is_tuple is always True."""
 
-    def __init__(self, num_units, forget_bias=0.0, activation=tf.nn.tanh):
+    def __init__(self, num_units, forget_bias=1.0, activation=tf.nn.tanh):
         self._num_units = num_units
         self._forget_bias = forget_bias
         self._activation = activation

@@ -10,7 +10,7 @@ from utils.pascal_voc import get_classes, resolve_class_names
 plt.rcParams.update({'font.size': 6})
 
 validation_data_dir = '/home/pseweryn/Repositories/VOCdevkit/VOC2012'
-save_directory = '/home/pseweryn/Projects/multidimensional_lstm/repository/results'
+save_directory = 'output/single_lstm'
 experiment_name = 'saving_layers'
 
 segmentation_true_dir = 'segmentation_true'
