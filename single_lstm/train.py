@@ -1,11 +1,11 @@
 import os
 
 import matplotlib.pyplot as plt
-from keras.callbacks import ModelCheckpoint
-from keras.optimizers import Adam
+from tensorflow.keras.callbacks import Callback, ModelCheckpoint
+from tensorflow.keras.optimizers import Adam
 
-from single_LSTM.custom_loss_function import class_weighted_pixelwise_crossentropy
-from single_LSTM.models import build_model
+from single_lstm.custom_loss_function import class_weighted_pixelwise_crossentropy
+from single_lstm.models import build_model
 from utils.images import Dataset
 
 if __name__ == '__main__':
@@ -16,14 +16,14 @@ if __name__ == '__main__':
 
     model = build_model(90, 90, 27)
     model.summary()
-    optimizer = Adam(lr=10e-4)
+    optimizer = Adam(learning_rate=10e-4)
     model.compile(loss=class_weighted_pixelwise_crossentropy, optimizer=optimizer, metrics=['accuracy'])
     folder_to_save_models = (
         '/home/pseweryn/Projects/multidimensional_lstm/repository/models/one_class_only_without_permute'
     )
     if not os.path.exists(folder_to_save_models):
         os.makedirs(folder_to_save_models)
-    callbacks = [
+    callbacks: list[Callback] = [
         ModelCheckpoint(
             os.path.join(folder_to_save_models, 'weights.{epoch:02d}-{val_loss:.4f}.hdf5'), save_best_only=True
         )
@@ -43,6 +43,9 @@ if __name__ == '__main__':
         callbacks=callbacks,
         validation_data=[[X_val[0], X_val[1], X_val[2], X_val[3]], y_val],
     )
+
+    if history is None:
+        raise ValueError('Model training failed')
 
     plt.plot(history.history['acc'])
     plt.plot(history.history['val_acc'])

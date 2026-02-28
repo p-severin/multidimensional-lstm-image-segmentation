@@ -2,13 +2,32 @@ import os
 from functools import partial
 from typing import ClassVar
 
-import keras
 import numpy as np
 import pandas as pd
 from PIL import Image
 from skimage.util import view_as_windows
-from sklearn.externals._pilutil import imresize
-from tensorflow.python.keras.utils import to_categorical
+from tensorflow import keras
+from tensorflow.keras.utils import to_categorical
+
+
+def imresize(arr, size, interp='bilinear', mode=None):
+    if interp == 'nearest':
+        resample = Image.NEAREST
+    elif interp == 'bilinear':
+        resample = Image.BILINEAR
+    elif interp == 'bicubic':
+        resample = Image.BICUBIC
+    else:
+        resample = Image.BILINEAR
+
+    im = Image.fromarray(arr, mode=mode)
+    # PIL takes (width, height), but imresize assumed (height, width)
+    # Checking usage, if size is tuple, it is (height, width).
+    # If size is int/float, it is a scaling factor (not handled here but likely not used).
+    # Assuming size is (height, width) tuple.
+    width, height = size[1], size[0]
+    im = im.resize((width, height), resample=resample)
+    return np.array(im)
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -91,7 +110,6 @@ class DataGenerator(keras.utils.Sequence):
         return image
 
     def get_image_numbers(self, subset):
-
         if subset not in ['train', 'trainval', 'val']:
             raise Exception('No such data subset exists.')
 

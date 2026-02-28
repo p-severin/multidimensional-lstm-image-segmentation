@@ -1,10 +1,10 @@
 import os
 
 import matplotlib.pyplot as plt
-from keras.engine import Model
+from tensorflow.keras.models import Model
 
 from classes_pascal import pascal_ids
-from single_LSTM.models import build_model, get_model_with_layer
+from single_lstm.models import build_model, get_model_with_layer
 from utils.images import Dataset
 
 plt.rcParams.update({'font.size': 6})

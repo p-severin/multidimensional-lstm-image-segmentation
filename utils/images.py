@@ -8,8 +8,28 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from skimage.util import view_as_windows
-from sklearn.externals._pilutil import imresize
-from tensorflow.python.keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
+
+
+def imresize(arr, size, interp='bilinear', mode=None):
+    if interp == 'nearest':
+        resample = Image.NEAREST
+    elif interp == 'bilinear':
+        resample = Image.BILINEAR
+    elif interp == 'bicubic':
+        resample = Image.BICUBIC
+    else:
+        resample = Image.BILINEAR
+
+    im = Image.fromarray(arr, mode=mode)
+    # PIL takes (width, height), but imresize assumed (height, width)
+    # Checking usage, if size is tuple, it is (height, width).
+    # If size is int/float, it is a scaling factor (not handled here but likely not used).
+    # Assuming size is (height, width) tuple.
+    width, height = size[1], size[0]
+    im = im.resize((width, height), resample=resample)
+    return np.array(im)
+
 
 if platform == 'linux':
     directory_voc_dataset = '/home/pseweryn/Repositories/VOCdevkit/VOC2012'
@@ -34,15 +54,14 @@ class Dataset:
         self.image_shape = image_shape
         self.segmentation_shape = (self.image_shape[0] // 3, self.image_shape[1] // 3)
         self.files = self.__get_image_numbers()
-        self.original_images = []
-        self.X = []
-        self.X_vertical = []
-        self.X_horizontal = []
-        self.X_both_transformations = []
-        self.y = []
+        self.original_images: list | np.ndarray = []
+        self.X: list | np.ndarray = []
+        self.X_vertical: list | np.ndarray = []
+        self.X_horizontal: list | np.ndarray = []
+        self.X_both_transformations: list | np.ndarray = []
+        self.y: list | np.ndarray = []
 
     def __get_image_numbers(self):
-
         if self.subset not in ['train', 'trainval', 'val']:
             raise Exception('No such data subset exists.')
 
@@ -73,6 +92,7 @@ class Dataset:
         self.y = [imresize(image, self.segmentation_shape, interp='nearest') for image in self.y]
 
     def remove_classes_not_used(self):
+        assert isinstance(self.y, np.ndarray)
         classes_to_be_removed = list(np.unique(self.y))
         classes_to_be_removed = [x for x in classes_to_be_removed if x not in self.chosen_classes]
         print(classes_to_be_removed)

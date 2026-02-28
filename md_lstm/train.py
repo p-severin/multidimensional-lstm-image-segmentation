@@ -6,7 +6,7 @@ from sys import platform
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib import slim
+import tf_slim as slim
 
 from md_lstm.md_lstm_implementation import multi_dimensional_rnn_while_loop
 from utils.images import Dataset

@@ -1,8 +1,8 @@
 import random
 
 import numpy as np
-from keras import Sequential
-from keras.layers import LSTM, Bidirectional, Dense, TimeDistributed
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import LSTM, Bidirectional, Dense, TimeDistributed
 
 
 def get_sequence(n_timesteps):
@@ -40,11 +40,11 @@ X, y = get_sequences(50000, n_timesteps)
 model.fit(X, y, epochs=1, batch_size=10)
 
 X, y = get_sequences(100, n_timesteps)
-loss, acc = model.evaluate(X, y, verbose=2)
+loss, acc = model.evaluate(X, y, verbose=0)
 print(f'Loss : {loss}, Accuracy: {acc * 100}')
 
 for _ in range(10):
     X, y = get_sequences(1, n_timesteps)
-    y_pred = model.predict_classes(X, verbose=2)
+    y_pred = (model.predict(X, verbose=0) > 0.5).astype('int32')
     exp, pred = y.reshape(n_timesteps), y_pred.reshape(n_timesteps)
     print(f'y = {y}, y_pred = {y_pred}, correct = {np.array_equal(exp, pred)}')

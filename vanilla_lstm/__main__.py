@@ -2,8 +2,8 @@
 from random import randint
 
 import numpy as np
-from keras import Sequential
-from keras.layers import LSTM, Dense
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import LSTM, Dense
 
 
 def generate_sequence(length, n_features):

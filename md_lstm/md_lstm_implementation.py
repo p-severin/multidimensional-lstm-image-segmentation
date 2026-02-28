@@ -1,6 +1,36 @@
 import tensorflow as tf
-from tensorflow.contrib.rnn import LSTMStateTuple, RNNCell
-from tensorflow.contrib.rnn.python.ops.core_rnn_cell import _linear
+
+if int(tf.__version__.split('.')[0]) >= 2:
+    import tensorflow.compat.v1 as tf
+
+    tf.disable_v2_behavior()
+    from tensorflow.compat.v1.nn.rnn_cell import LSTMStateTuple, RNNCell
+
+    def _linear(args, output_size, bias, bias_start=0.0, scope=None):
+        total_arg_size = 0
+        shapes = [a.get_shape().as_list() for a in args]
+        for shape in shapes:
+            if len(shape) != 2:
+                raise ValueError(f'Linear is expecting 2D arguments: {str(shapes)}')
+            if not shape[1]:
+                raise ValueError(f'Linear expects shape[1] of arguments: {str(shapes)}')
+            else:
+                total_arg_size += shape[1]
+
+        with tf.variable_scope(scope or 'Linear'):
+            matrix = tf.get_variable('Matrix', [total_arg_size, output_size])
+            if len(args) == 1:
+                res = tf.matmul(args[0], matrix)
+            else:
+                res = tf.matmul(tf.concat(axis=1, values=args), matrix)
+            if not bias:
+                return res
+            bias_term = tf.get_variable('Bias', [output_size], initializer=tf.constant_initializer(bias_start))
+        return res + bias_term
+
+else:
+    from tensorflow.contrib.rnn import LSTMStateTuple, RNNCell
+    from tensorflow.contrib.rnn.python.ops.core_rnn_cell import _linear
 
 
 def ln(tensor, scope=None, epsilon=1e-5):
@@ -175,7 +205,6 @@ def multi_dimensional_rnn_while_loop(rnn_size, input_data, sh, dims=None, scope_
 
         # Body of the while loop operation that applies the MD LSTM
         def body(time_, outputs_ta_, states_ta_):
-
             # If the current position is less or equal than the width, we are in the first row
             # and we need to read the zero state we added in row (h*w).
             # If not, get the sample located at a width distance.

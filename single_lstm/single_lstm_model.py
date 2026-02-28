@@ -1,5 +1,5 @@
-from keras import Sequential
-from keras.layers import LSTM, Bidirectional, Dense, Permute, Reshape
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import LSTM, Bidirectional, Dense, Permute, Reshape
 
 rows = 96
 cols = 96

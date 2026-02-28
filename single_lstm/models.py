@@ -1,8 +1,8 @@
-from keras import Input, Model
-from keras import backend as K
-from keras.layers import LSTM, Dense, Lambda, Permute, concatenate
-from keras.optimizers import Adam
-from keras.utils import plot_model
+from tensorflow.keras import Input, Model
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import LSTM, Dense, Lambda, Permute, concatenate
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import plot_model
 
 rows = 90
 cols = 90
