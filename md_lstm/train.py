@@ -6,7 +6,7 @@ import tensorflow as tf
 import tf_slim as slim
 
 from md_lstm.md_lstm_implementation import multi_dimensional_rnn_while_loop
-from single_lstm.data_generator import DataGenerator
+from utils.data_generator import DataGenerator
 
 plt.rcParams.update({'font.size': 6})
 

@@ -9,7 +9,7 @@ from PIL import Image
 from skimage.util import view_as_windows
 from tensorflow.keras.utils import to_categorical
 
-from single_lstm.data_generator import imresize
+from utils.data_generator import imresize
 
 
 class Dataset:

@@ -5,8 +5,8 @@ from tensorflow.keras.callbacks import Callback, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 
 from single_lstm.custom_loss_function import class_weighted_pixelwise_crossentropy
-from single_lstm.data_generator import DataGenerator
 from single_lstm.models import build_model
+from utils.data_generator import DataGenerator
 
 DATA_DIR = 'data/voc_2012_segmentation_data'
 
