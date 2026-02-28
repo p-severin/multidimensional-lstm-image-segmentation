@@ -178,7 +178,7 @@ def multi_dimensional_rnn_while_loop(rnn_size, input_data, sh, dims=None, scope_
             # If the current position is less or equal than the width, we are in the first row
             # and we need to read the zero state we added in row (h*w).
             # If not, get the sample located at a width distance.
-            state_up = tf.cond(tf.less_equal(time_, tf.constant(w)),
+            state_up = tf.cond(tf.less(time_, tf.constant(w)),
                                lambda: states_ta_.read(h * w),
                                lambda: states_ta_.read(get_up(time_, w)))
 

@@ -18,6 +18,6 @@ pascal_ids = (
     'pottedplant',
     'sheep',
     'sofa',
-    'train'
+    'train',
     'tvmonitor',
 )

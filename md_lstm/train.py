@@ -58,15 +58,17 @@ def get_arguments(parser: argparse.ArgumentParser):
 
 
 def train():
-    learning_rate = 10e-4
+    learning_rate = 1e-3
     batch_size = 2
     epochs = 5
     h = 96
     w = 96
-    channels = 3
+    channels = 27  # 3x3x3 patch features from Dataset
     hidden_size = 40
     how_many_classes = 2
-    eps = 10e-4
+    eps = 1e-4
+    h_patches = h // 3  # patch grid height
+    w_patches = w // 3  # patch grid width
 
     if platform == 'linux':
         directory_voc_dataset = '/home/pseweryn/Repositories/VOCdevkit/VOC2012'
@@ -74,30 +76,30 @@ def train():
         directory_voc_dataset = '/Users/patrykseweryn/PycharmProjects/datasets/voc_dataset/VOCtrainval_11-May-2012/VOCdevkit/VOC2012'
 
     dataset = Dataset(directory_voc_dataset, 'train', [15], image_shape=(h, w))
-    data_X, data_y = dataset.generate_data()
+    data_X, data_y = dataset.generate_data(500)
     print(len(data_X))
     print(len(data_y))
 
-    x = tf.placeholder(tf.float32, [batch_size, h, w, channels])
-    x_v = tf.placeholder(tf.float32, [batch_size, h, w, channels])
-    x_h = tf.placeholder(tf.float32, [batch_size, h, w, channels])
-    x_vh = tf.placeholder(tf.float32, [batch_size, h, w, channels])
+    x = tf.placeholder(tf.float32, [batch_size, h_patches, w_patches, channels])
+    x_v = tf.placeholder(tf.float32, [batch_size, h_patches, w_patches, channels])
+    x_h = tf.placeholder(tf.float32, [batch_size, h_patches, w_patches, channels])
+    x_vh = tf.placeholder(tf.float32, [batch_size, h_patches, w_patches, channels])
 
-    y = tf.placeholder(tf.int32, [batch_size, h // 3, w // 3, how_many_classes])
+    y = tf.placeholder(tf.float32, [batch_size, h_patches, w_patches, how_many_classes])
 
     logger.info('Using Multi Dimensional LSTM.')
 
     rnn_out, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                  input_data=x, sh=[3, 3],
+                                                  input_data=x, sh=[1, 1],
                                                   scope_n='layer_1')
     rnn_out_v, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                    input_data=x_v, sh=[3, 3],
+                                                    input_data=x_v, sh=[1, 1],
                                                     scope_n='layer_2')
     rnn_out_h, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                    input_data=x_h, sh=[3, 3],
+                                                    input_data=x_h, sh=[1, 1],
                                                     scope_n='layer_3')
     rnn_out_vh, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                     input_data=x_vh, sh=[3, 3],
+                                                     input_data=x_vh, sh=[1, 1],
                                                      scope_n='layer_4')
 
     model_out = slim.fully_connected(
@@ -129,13 +131,14 @@ def train():
                                                        sh=[1, 1],
                                                        scope_n='layer_2_4')
 
-    model_output = slim.fully_connected(
+    model_logits = slim.fully_connected(
         inputs=tf.concat([rnn_out_2, rnn_out_2_v, rnn_out_2_h, rnn_out_2_vh],
                          axis=3),
         num_outputs=how_many_classes,
-        activation_fn=tf.nn.softmax)
+        activation_fn=None)
 
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=model_output))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.cast(y, tf.float32), logits=model_logits))
+    model_output = tf.nn.softmax(model_logits)
     grad_update = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
@@ -149,20 +152,28 @@ def train():
 
     # names = [str(op.name) for op in tf.get_default_graph().get_operations()]
 
+    # data_X shape: (4, N, h_patches, w_patches, 27) - 4 transformations, N images
+    # data_y shape: (N, h_patches, w_patches, num_classes)
+    num_images = data_X.shape[1]
+
     for epoch in range(epochs):
-        steps = data_X.shape[0] // batch_size
+        steps = num_images // batch_size
         print('number of steps: {}'.format(steps))
         for i in range(steps):
-            batch_x = data_X[i * batch_size: (i + 1) * batch_size]
-            batch_x += eps
-            print(np.min(batch_x), np.max(batch_x))
-            batch_y = data_y[i * batch_size: (i + 1) * batch_size]
+            idx_start = i * batch_size
+            idx_end = (i + 1) * batch_size
+            batch_x_orig = data_X[0, idx_start:idx_end] + eps
+            batch_x_v = data_X[1, idx_start:idx_end] + eps
+            batch_x_h = data_X[2, idx_start:idx_end] + eps
+            batch_x_vh = data_X[3, idx_start:idx_end] + eps
+            print(np.min(batch_x_orig), np.max(batch_x_orig))
+            batch_y = data_y[idx_start:idx_end]
 
             model_preds, tot_loss_value, _ = sess.run(
-                [model_output, loss, grad_update], feed_dict={x: batch_x[:, 0],
-                                                           x_v: batch_x[:, 1],
-                                                           x_h: batch_x[:, 2],
-                                                           x_vh: batch_x[:, 3],
+                [model_output, loss, grad_update], feed_dict={x: batch_x_orig,
+                                                           x_v: batch_x_v,
+                                                           x_h: batch_x_h,
+                                                           x_vh: batch_x_vh,
                                                            y: batch_y})
 
 
@@ -183,7 +194,7 @@ def train():
                 # plt.subplot(133)
                 # plt.imshow(model_preds[0, :, :, 2], vmin=0, vmax=1)
                 plt.subplot(151)
-                plt.imshow(batch_x[0, 0, :, :, :])
+                plt.imshow(batch_x_orig[0, :, :, :3])
                 plt.title('oryginał')
                 plt.axis('off')
 

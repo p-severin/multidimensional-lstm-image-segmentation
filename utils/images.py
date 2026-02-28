@@ -132,7 +132,7 @@ class Dataset:
     def one_hot_encode_y(self):
         self.y = to_categorical(self.y, num_classes=len(self.chosen_classes) + 1)
 
-    def generate_data(self, how_many_images):
+    def generate_data(self, how_many_images=-1):
         self.generate_images(how_many_images=how_many_images)
         self.resize_images()
         self.transform_data_to_numpy_arrays()

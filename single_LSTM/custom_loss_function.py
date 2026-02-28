@@ -1,7 +1,8 @@
 from keras import backend as K
 
-weights = [1] + 20 * [3]
+# Weight for [background, person] - higher weight for person to handle class imbalance
+weights = [1, 3]
 
 def class_weighted_pixelwise_crossentropy(target, output):
-    output = K.clip(output, 10e-8, 1. - 10e-8)
-    return -K.sum(target * weights * K.log(output), axis=3)
+    output = K.clip(output, 1e-7, 1. - 1e-7)
+    return -K.sum(target * weights * K.log(output), axis=-1)

@@ -11,7 +11,6 @@ from utils.images import Dataset
 
 from keras import backend as K
 
-batch_size = 1
 rows = 90
 cols = 90
 channels = 27
@@ -28,7 +27,8 @@ def reshape_to_one_dimension_hidden_size(x):
 
 
 def reshape_to_two_dimensions(x):
-    return K.reshape(x, (batch_size, rows, cols, -1))
+    batch = K.shape(x)[0] // rows
+    return K.reshape(x, (batch, rows, cols, -1))
 
 
 def get_model_with_layer(path, layername):
@@ -45,7 +45,7 @@ def get_model_with_layer(path, layername):
 
 
 def build_model(rows, cols, channels):
-    input_x = Input(batch_shape=(batch_size, rows, cols, channels))
+    input_x = Input(shape=(rows, cols, channels))
     x = Lambda(reshape_to_one_dimension)(input_x)
     x = LSTM(hidden_size, return_sequences=True)(x)
     x = Lambda(reshape_to_two_dimensions)(x)
@@ -55,7 +55,7 @@ def build_model(rows, cols, channels):
     x = Lambda(reshape_to_two_dimensions)(x)
     # x = Permute((1, 2, 3))(x)
 
-    input_xv = Input(batch_shape=(batch_size, rows, cols, channels))
+    input_xv = Input(shape=(rows, cols, channels))
     xv = Lambda(reshape_to_one_dimension)(input_xv)
     xv = LSTM(hidden_size, return_sequences=True)(xv)
     xv = Lambda(reshape_to_two_dimensions)(xv)
@@ -65,7 +65,7 @@ def build_model(rows, cols, channels):
     xv = Lambda(reshape_to_two_dimensions)(xv)
     # xv = Permute((1, 2, 3))(xv)
 
-    input_xh = Input(batch_shape=(batch_size, rows, cols, channels))
+    input_xh = Input(shape=(rows, cols, channels))
     xh = Lambda(reshape_to_one_dimension)(input_xh)
     xh = LSTM(hidden_size, return_sequences=True)(xh)
     xh = Lambda(reshape_to_two_dimensions)(xh)
@@ -75,7 +75,7 @@ def build_model(rows, cols, channels):
     xh = Lambda(reshape_to_two_dimensions)(xh)
     # xh = Permute((1, 2, 3))(xh)
 
-    input_xvh = Input(batch_shape=(batch_size, rows, cols, channels))
+    input_xvh = Input(shape=(rows, cols, channels))
     xvh = Lambda(reshape_to_one_dimension)(input_xvh)
     xvh = LSTM(hidden_size, return_sequences=True)(xvh)
     xvh = Lambda(reshape_to_two_dimensions)(xvh)

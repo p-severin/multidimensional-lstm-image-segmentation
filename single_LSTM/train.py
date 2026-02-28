@@ -18,7 +18,7 @@ if __name__ == '__main__':
     model = build_model(90, 90, 27)
     model.summary()
     optimizer = Adam(lr=10e-4)
-    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    model.compile(loss=class_weighted_pixelwise_crossentropy, optimizer=optimizer, metrics=['accuracy'])
     folder_to_save_models = '/home/pseweryn/Projects/multidimensional_lstm/repository/models/one_class_only_without_permute'
     if not os.path.exists(folder_to_save_models):
         os.makedirs(folder_to_save_models)
