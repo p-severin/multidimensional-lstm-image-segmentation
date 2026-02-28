@@ -7,12 +7,13 @@ from tensorflow.keras.optimizers import Adam
 from single_lstm.custom_loss_function import class_weighted_pixelwise_crossentropy
 from single_lstm.models import build_model
 from utils.data_generator import DataGenerator
+from utils.pascal_voc import resolve_class_names
 
 DATA_DIR = 'data/voc_2012_segmentation_data'
 
 if __name__ == '__main__':
     dim = (90, 90)
-    chosen_classes = [15]
+    chosen_classes = resolve_class_names(['person'])
 
     training_generator = DataGenerator(DATA_DIR, 'train', chosen_classes, batch_size=4, dim=dim, shuffle=True)
     validation_generator = DataGenerator(DATA_DIR, 'val', chosen_classes, batch_size=4, dim=dim, shuffle=False)

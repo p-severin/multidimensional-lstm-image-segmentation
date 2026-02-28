@@ -10,6 +10,7 @@ from skimage.util import view_as_windows
 from tensorflow.keras.utils import to_categorical
 
 from utils.data_generator import imresize
+from utils.pascal_voc import rgb_mask_to_indices
 
 
 class Dataset:
@@ -45,8 +46,9 @@ class Dataset:
     def __open_image(self, file_name, image_type):
         image_path = os.path.join(self.directories[image_type], file_name + self.extensions[image_type])
         image = Image.open(image_path)
-        image = np.array(image)
-        return image
+        if image_type == 'segmentation':
+            return rgb_mask_to_indices(np.array(image.convert('RGB'), dtype=np.uint8))
+        return np.array(image)
 
     def generate_images(self, how_many_images: int):
         if how_many_images == -1:

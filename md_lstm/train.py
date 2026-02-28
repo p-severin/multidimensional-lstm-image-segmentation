@@ -7,6 +7,7 @@ import tf_slim as slim
 
 from md_lstm.md_lstm_implementation import multi_dimensional_rnn_while_loop
 from utils.data_generator import DataGenerator
+from utils.pascal_voc import resolve_class_names
 
 plt.rcParams.update({'font.size': 6})
 
@@ -28,7 +29,7 @@ def train():
     h_patches = h // 3
     w_patches = w // 3
 
-    chosen_classes = [15]
+    chosen_classes = resolve_class_names(['person'])
     dim = (h_patches, w_patches)
 
     generator = DataGenerator(DATA_DIR, 'train', chosen_classes, batch_size=batch_size, dim=dim, shuffle=True)

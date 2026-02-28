@@ -3,9 +3,9 @@ import os
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Model
 
-from classes_pascal import pascal_ids
 from single_lstm.models import build_model, get_model_with_layer
 from utils.images import Dataset
+from utils.pascal_voc import get_classes, resolve_class_names
 
 plt.rcParams.update({'font.size': 6})
 
@@ -34,7 +34,9 @@ ncols = 8
 
 
 def validate(model: Model, batch_size, layer):
-    dataset = Dataset(validation_data_dir, 'val', chosen_classes=[15], image_shape=(270, 270))
+    dataset = Dataset(
+        validation_data_dir, 'val', chosen_classes=resolve_class_names(['person']), image_shape=(270, 270)
+    )
     X, y = dataset.generate_data(100)
     print(X.shape)
 
@@ -48,7 +50,7 @@ def validate(model: Model, batch_size, layer):
         for row in range(nrows):
             for col in range(ncols):
                 ax[col].imshow(y[i, :, :, col + row * ncols], vmin=0, vmax=1)
-                ax[col].set_title(pascal_ids[col + row * ncols])
+                ax[col].set_title(get_classes()[col + row * ncols])
                 ax[col].axis('off')
         fig.savefig(os.path.join(save_segmentation_true_dir, f'seg_true_iteration_{i}.jpg'))
         plt.close(fig)

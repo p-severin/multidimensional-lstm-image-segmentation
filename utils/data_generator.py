@@ -6,6 +6,8 @@ from skimage.util import view_as_windows
 from tensorflow import keras
 from tensorflow.keras.utils import to_categorical
 
+from utils.pascal_voc import rgb_mask_to_indices
+
 SUBSET_DIR_MAP = {
     'train': ('train_images', 'train_labels'),
     'val': ('valid_images', 'valid_labels'),
@@ -63,7 +65,8 @@ class DataGenerator(keras.utils.Sequence):
 
     def _load_mask_raw(self, stem: str) -> np.ndarray:
         path = os.path.join(self.labels_dir, stem + '.png')
-        return np.array(Image.open(path), dtype=np.uint8)
+        mask_rgb = np.array(Image.open(path).convert('RGB'), dtype=np.uint8)
+        return rgb_mask_to_indices(mask_rgb)
 
     def __len__(self):
         return len(self.file_stems) // self.batch_size
