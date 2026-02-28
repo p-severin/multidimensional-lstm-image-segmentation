@@ -31,7 +31,7 @@ def generate_example(length, n_features, out_index):
     return X, y
 
 
-if __name__ == '__main__':
+def train():
     length = 5
     n_features = 10
     out_index = 2
@@ -58,3 +58,7 @@ if __name__ == '__main__':
         X, y = generate_example(length, n_features, out_index)
         y_pred = model.predict(X, verbose=0)
         print(f'Expected: {one_hot_decode(y)[0]}, Got: {one_hot_decode(y_pred)[0]}')
+
+
+if __name__ == '__main__':
+    train()

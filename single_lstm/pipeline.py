@@ -11,7 +11,7 @@ from utils.pascal_voc import resolve_class_names
 
 DATA_DIR = 'data/voc_2012_segmentation_data'
 
-if __name__ == '__main__':
+def train():
     dim = (90, 90)
     chosen_classes = resolve_class_names(['person'])
 
@@ -60,3 +60,7 @@ if __name__ == '__main__':
     plt.legend(['train', 'validation'], loc='upper left')
     plt.savefig('./loss.png')
     plt.close()
+
+
+if __name__ == '__main__':
+    train()

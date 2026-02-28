@@ -28,7 +28,7 @@ def get_sequences(n_sequences, n_timesteps):
     return seqX, seqY
 
 
-if __name__ == '__main__':
+def train():
     n_timesteps = 10
 
     model = Sequential()
@@ -49,3 +49,7 @@ if __name__ == '__main__':
         y_pred = (model.predict(X, verbose=0) > 0.5).astype('int32')
         exp, pred = y.reshape(n_timesteps), y_pred.reshape(n_timesteps)
         print(f'y = {y}, y_pred = {y_pred}, correct = {np.array_equal(exp, pred)}')
+
+
+if __name__ == '__main__':
+    train()
