@@ -12,7 +12,7 @@ hidden_size = 40
 
 def get_model_with_layer(path, layername):
     model = build_model(90, 90, 27)
-    optimizer = Adam(lr=10e-4)
+    optimizer = Adam(learning_rate=10e-4)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
     model.load_weights(path)
