@@ -1,22 +1,17 @@
 import tensorflow as tf
-from tensorflow.contrib.rnn import RNNCell, LSTMStateTuple
+from tensorflow.contrib.rnn import LSTMStateTuple, RNNCell
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import _linear
-from tensorflow.python.ops.rnn import dynamic_rnn
 
 
 def ln(tensor, scope=None, epsilon=1e-5):
-    """ Layer normalizes a 2D tensor along its second axis """
-    assert (len(tensor.get_shape()) == 2)
+    """Layer normalizes a 2D tensor along its second axis"""
+    assert len(tensor.get_shape()) == 2
     m, v = tf.nn.moments(tensor, [1], keep_dims=True)
     if not isinstance(scope, str):
         scope = ''
     with tf.variable_scope(scope + 'layer_norm'):
-        scale = tf.get_variable('scale',
-                                shape=[tensor.get_shape()[1]],
-                                initializer=tf.constant_initializer(1))
-        shift = tf.get_variable('shift',
-                                shape=[tensor.get_shape()[1]],
-                                initializer=tf.constant_initializer(0))
+        scale = tf.get_variable('scale', shape=[tensor.get_shape()[1]], initializer=tf.constant_initializer(1))
+        shift = tf.get_variable('shift', shape=[tensor.get_shape()[1]], initializer=tf.constant_initializer(0))
     ln_initial = (tensor - m) / tf.sqrt(v + epsilon)
 
     return ln_initial * scale + shift
@@ -61,9 +56,11 @@ class MultiDimensionalLSTMCell(RNNCell):
             f2 = ln(f2, scope='f2/')
             o = ln(o, scope='o/')
 
-            new_c = (c1 * tf.nn.sigmoid(f1 + self._forget_bias) +
-                     c2 * tf.nn.sigmoid(f2 + self._forget_bias) + tf.nn.sigmoid(i) *
-                     self._activation(j))
+            new_c = (
+                c1 * tf.nn.sigmoid(f1 + self._forget_bias)
+                + c2 * tf.nn.sigmoid(f2 + self._forget_bias)
+                + tf.nn.sigmoid(i) * self._activation(j)
+            )
 
             # add layer_normalization in calculation of new hidden state
             new_h = self._activation(ln(new_c, scope='new_h/')) * tf.nn.sigmoid(o)
@@ -72,7 +69,7 @@ class MultiDimensionalLSTMCell(RNNCell):
             return new_h, new_state
 
 
-def multi_dimensional_rnn_while_loop(rnn_size, input_data, sh, dims=None, scope_n="layer1"):
+def multi_dimensional_rnn_while_loop(rnn_size, input_data, sh, dims=None, scope_n='layer1'):
     """Implements naive multi dimension recurrent neural networks
 
     @param rnn_size: the hidden units
@@ -86,7 +83,6 @@ def multi_dimensional_rnn_while_loop(rnn_size, input_data, sh, dims=None, scope_
     """
 
     with tf.variable_scope(scope_n):
-
         # Create multidimensional cell with selected size
         cell = MultiDimensionalLSTMCell(rnn_size)
 
@@ -157,8 +153,13 @@ def multi_dimensional_rnn_while_loop(rnn_size, input_data, sh, dims=None, scope_
 
         # initial cell hidden states
         # Write to the last position of the array, the LSTMStateTuple filled with zeros
-        states_ta = states_ta.write(h * w, LSTMStateTuple(tf.zeros([batch_size_runtime, rnn_size], tf.float32),
-                                                          tf.zeros([batch_size_runtime, rnn_size], tf.float32)))
+        states_ta = states_ta.write(
+            h * w,
+            LSTMStateTuple(
+                tf.zeros([batch_size_runtime, rnn_size], tf.float32),
+                tf.zeros([batch_size_runtime, rnn_size], tf.float32),
+            ),
+        )
 
         # Function to get the sample skipping one row
         def get_up(t_, w_):
@@ -178,14 +179,18 @@ def multi_dimensional_rnn_while_loop(rnn_size, input_data, sh, dims=None, scope_
             # If the current position is less or equal than the width, we are in the first row
             # and we need to read the zero state we added in row (h*w).
             # If not, get the sample located at a width distance.
-            state_up = tf.cond(tf.less(time_, tf.constant(w)),
-                               lambda: states_ta_.read(h * w),
-                               lambda: states_ta_.read(get_up(time_, w)))
+            state_up = tf.cond(
+                tf.less(time_, tf.constant(w)),
+                lambda: states_ta_.read(h * w),
+                lambda: states_ta_.read(get_up(time_, w)),
+            )
 
             # If it is the first step we read the zero state if not we read the inmediate last
-            state_last = tf.cond(tf.less(zero, tf.mod(time_, tf.constant(w))),
-                                 lambda: states_ta_.read(get_last(time_, w)),
-                                 lambda: states_ta_.read(h * w))
+            state_last = tf.cond(
+                tf.less(zero, tf.mod(time_, tf.constant(w))),
+                lambda: states_ta_.read(get_last(time_, w)),
+                lambda: states_ta_.read(h * w),
+            )
 
             # We build the input state in both dimensions
             current_state = state_up[0], state_last[0], state_up[1], state_last[1]
@@ -205,8 +210,9 @@ def multi_dimensional_rnn_while_loop(rnn_size, input_data, sh, dims=None, scope_
             return tf.less(time_, tf.constant(h * w))
 
         # Run the looped operation
-        result, outputs_ta, states_ta = tf.while_loop(condition, body, [time, outputs_ta, states_ta],
-                                                      parallel_iterations=1)
+        _result, outputs_ta, states_ta = tf.while_loop(
+            condition, body, [time, outputs_ta, states_ta], parallel_iterations=1
+        )
 
         # Extract the output tensors from the processesed tensor array
         outputs = outputs_ta.stack()

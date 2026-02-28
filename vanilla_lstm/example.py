@@ -2,7 +2,7 @@ import random
 
 import numpy as np
 from keras import Sequential
-from keras.layers import Bidirectional, LSTM, TimeDistributed, Dense
+from keras.layers import LSTM, Bidirectional, Dense, TimeDistributed
 
 
 def get_sequence(n_timesteps):
@@ -13,6 +13,7 @@ def get_sequence(n_timesteps):
     y = np.array([0 if x < limit else 1 for x in np.cumsum(X)])
 
     return X, y
+
 
 def get_sequences(n_sequences, n_timesteps):
     seqX, seqY = list(), list()
@@ -25,6 +26,7 @@ def get_sequences(n_sequences, n_timesteps):
     seqX = np.array(seqX).reshape(n_sequences, n_timesteps, 1)
     seqY = np.array(seqY).reshape(n_sequences, n_timesteps, 1)
     return seqX, seqY
+
 
 n_timesteps = 10
 
@@ -39,10 +41,10 @@ model.fit(X, y, epochs=1, batch_size=10)
 
 X, y = get_sequences(100, n_timesteps)
 loss, acc = model.evaluate(X, y, verbose=2)
-print('Loss : {}, Accuracy: {}'.format(loss, acc*100))
+print(f'Loss : {loss}, Accuracy: {acc * 100}')
 
 for _ in range(10):
     X, y = get_sequences(1, n_timesteps)
     y_pred = model.predict_classes(X, verbose=2)
     exp, pred = y.reshape(n_timesteps), y_pred.reshape(n_timesteps)
-    print('y = {}, y_pred = {}, correct = {}'.format(y, y_pred, np.array_equal(exp, pred)))
+    print(f'y = {y}, y_pred = {y_pred}, correct = {np.array_equal(exp, pred)}')

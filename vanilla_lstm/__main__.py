@@ -1,12 +1,14 @@
 # generate a sequence of random numbers in [0, n_features)
 from random import randint
+
 import numpy as np
 from keras import Sequential
 from keras.layers import LSTM, Dense
 
 
 def generate_sequence(length, n_features):
-    return [randint(0, n_features-1) for _ in range(length)]
+    return [randint(0, n_features - 1) for _ in range(length)]
+
 
 def one_hot_encode(sequence, n_features):
     encoding = list()
@@ -16,8 +18,10 @@ def one_hot_encode(sequence, n_features):
         encoding.append(vector)
     return np.array(encoding)
 
+
 def one_hot_decode(encoded_seq):
     return [np.argmax(vector) for vector in encoded_seq]
+
 
 def generate_example(length, n_features, out_index):
     sequence = generate_sequence(length, n_features)
@@ -27,8 +31,8 @@ def generate_example(length, n_features, out_index):
 
     return X, y
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     length = 5
     n_features = 10
     out_index = 2
@@ -42,4 +46,3 @@ if __name__ == '__main__':
 # for i in range(10000):
 #     X, y = generate_example(length, n_features, out_index)
 #     yhat = model.fit(X, y, verbose=2)
-

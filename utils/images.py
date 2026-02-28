@@ -1,6 +1,7 @@
 import os
-import sklearn
 from functools import partial
+from sys import platform
+from typing import ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,26 +11,24 @@ from skimage.util import view_as_windows
 from sklearn.externals._pilutil import imresize
 from tensorflow.python.keras.utils import to_categorical
 
-from sys import platform
-
 if platform == 'linux':
     directory_voc_dataset = '/home/pseweryn/Repositories/VOCdevkit/VOC2012'
 else:
-    directory_voc_dataset = '/Users/patrykseweryn/PycharmProjects/datasets/voc_dataset/VOCtrainval_11-May-2012/VOCdevkit/VOC2012'
+    directory_voc_dataset = (
+        '/Users/patrykseweryn/PycharmProjects/datasets/voc_dataset/VOCtrainval_11-May-2012/VOCdevkit/VOC2012'
+    )
 
 
 class Dataset:
-    extensions = dict(image='.jpg',
-                      segmentation='.png',
-                      annotations='.txt')
+    extensions: ClassVar[dict] = dict(image='.jpg', segmentation='.png', annotations='.txt')
 
     def __init__(self, directory_images: str, subset: str, chosen_classes: list, image_shape=(270, 270)):
         self.main_directory = partial(os.path.join, directory_images)
-        self.directories = dict(image=self.main_directory('JPEGImages'),
-                                segmentation=self.main_directory(
-                                    'SegmentationClass'),
-                                annotations=self.main_directory(
-                                    'ImageSets/Segmentation'))
+        self.directories = dict(
+            image=self.main_directory('JPEGImages'),
+            segmentation=self.main_directory('SegmentationClass'),
+            annotations=self.main_directory('ImageSets/Segmentation'),
+        )
         self.subset = subset
         self.chosen_classes = chosen_classes
         self.image_shape = image_shape
@@ -47,14 +46,12 @@ class Dataset:
         if self.subset not in ['train', 'trainval', 'val']:
             raise Exception('No such data subset exists.')
 
-        train_file = os.path.join(self.directories['annotations'],
-                                  self.subset + self.extensions['annotations'])
+        train_file = os.path.join(self.directories['annotations'], self.subset + self.extensions['annotations'])
         csv_data = pd.read_csv(train_file, header=None)
-        return csv_data.values.reshape((-1))
+        return csv_data.values.reshape(-1)
 
     def __open_image(self, file_name, image_type):
-        image_path = os.path.join(self.directories[image_type],
-                                  file_name + self.extensions[image_type])
+        image_path = os.path.join(self.directories[image_type], file_name + self.extensions[image_type])
         image = Image.open(image_path)
         image = np.array(image)
         return image
@@ -90,7 +87,7 @@ class Dataset:
         self.y = np.array(self.y)
 
     def prepare_input_data_X(self):
-        self.X = np.multiply(self.X, 1. / 255)
+        self.X = np.multiply(self.X, 1.0 / 255)
 
     def create_flipped_windows(self):
         self.X_vertical = np.flip(self.X, axis=1)
@@ -105,7 +102,7 @@ class Dataset:
     def leave_images_of_one_class(self):
         newX = []
         newY = []
-        for image, segmentation in zip(self.X, self.y):
+        for image, segmentation in zip(self.X, self.y, strict=False):
             for chosen_class in self.chosen_classes:
                 if chosen_class in np.unique(segmentation):
                     newX.append(image)
@@ -125,8 +122,9 @@ class Dataset:
         self.X = [self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in self.X]
         self.X_vertical = [self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in self.X_vertical]
         self.X_horizontal = [self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in self.X_horizontal]
-        self.X_both_transformations = [self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in
-                                       self.X_both_transformations]
+        self.X_both_transformations = [
+            self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in self.X_both_transformations
+        ]
         self.y = [self.divide_image_into_patches(image, segmentation_shape, segmentation_step) for image in self.y]
 
     def one_hot_encode_y(self):
@@ -168,7 +166,7 @@ if __name__ == '__main__':
 
     X, y = dataset.generate_data()
 
-    for image, segmentation in zip(X, y):
+    for image, segmentation in zip(X, y, strict=False):
         plt.subplot(121)
         plt.imshow(image)
         plt.subplot(122)

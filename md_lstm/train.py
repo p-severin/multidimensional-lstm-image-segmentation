@@ -1,35 +1,31 @@
 import argparse
 import logging
-from datetime import time
-import numpy as np
 from enum import Enum
 from sys import platform
 
 import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import slim
 
+from md_lstm.md_lstm_implementation import multi_dimensional_rnn_while_loop
 from utils.images import Dataset
 
 plt.rcParams.update({'font.size': 6})
 # plt.rcParams['figure.figsize'] = 5, 10
-
-from classes_pascal import pascal_ids
-from md_lstm.md_lstm_implementation import multi_dimensional_rnn_while_loop
 
 logger = logging.getLogger(__name__)
 
 
 def get_script_arguments():
     parser = argparse.ArgumentParser(description='MD LSTM trainer.')
-    parser.add_argument('--model_type',
-                        required=True,
-                        type=ModelType.from_string,
-                        choices=list(ModelType), help='Model type.')
+    parser.add_argument(
+        '--model_type', required=True, type=ModelType.from_string, choices=list(ModelType), help='Model type.'
+    )
     parser.add_argument('--enable_plotting', action='store_true')
 
     args = get_arguments(parser)
-    logger.info('Script inputs: {}.'.format(args))
+    logger.info(f'Script inputs: {args}.')
     return args
 
 
@@ -43,8 +39,8 @@ class ModelType(Enum):
     def from_string(s):
         try:
             return ModelType[s]
-        except KeyError:
-            raise ValueError()
+        except KeyError as e:
+            raise ValueError() from e
 
 
 def get_arguments(parser: argparse.ArgumentParser):
@@ -73,7 +69,9 @@ def train():
     if platform == 'linux':
         directory_voc_dataset = '/home/pseweryn/Repositories/VOCdevkit/VOC2012'
     else:
-        directory_voc_dataset = '/Users/patrykseweryn/PycharmProjects/datasets/voc_dataset/VOCtrainval_11-May-2012/VOCdevkit/VOC2012'
+        directory_voc_dataset = (
+            '/Users/patrykseweryn/PycharmProjects/datasets/voc_dataset/VOCtrainval_11-May-2012/VOCdevkit/VOC2012'
+        )
 
     dataset = Dataset(directory_voc_dataset, 'train', [15], image_shape=(h, w))
     data_X, data_y = dataset.generate_data(500)
@@ -89,55 +87,48 @@ def train():
 
     logger.info('Using Multi Dimensional LSTM.')
 
-    rnn_out, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                  input_data=x, sh=[1, 1],
-                                                  scope_n='layer_1')
-    rnn_out_v, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                    input_data=x_v, sh=[1, 1],
-                                                    scope_n='layer_2')
-    rnn_out_h, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                    input_data=x_h, sh=[1, 1],
-                                                    scope_n='layer_3')
-    rnn_out_vh, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                     input_data=x_vh, sh=[1, 1],
-                                                     scope_n='layer_4')
+    rnn_out, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size, input_data=x, sh=[1, 1], scope_n='layer_1')
+    rnn_out_v, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size, input_data=x_v, sh=[1, 1], scope_n='layer_2')
+    rnn_out_h, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size, input_data=x_h, sh=[1, 1], scope_n='layer_3')
+    rnn_out_vh, _ = multi_dimensional_rnn_while_loop(
+        rnn_size=hidden_size, input_data=x_vh, sh=[1, 1], scope_n='layer_4'
+    )
 
     model_out = slim.fully_connected(
         inputs=tf.concat([rnn_out, rnn_out_v, rnn_out_h, rnn_out_vh], axis=3),
         num_outputs=hidden_size,
-        activation_fn=tf.nn.tanh)
+        activation_fn=tf.nn.tanh,
+    )
 
     model_out_v = tf.image.flip_left_right(model_out)
     model_out_h = tf.image.flip_up_down(model_out)
     model_out_vh = tf.image.flip_up_down(model_out_v)
 
-    rnn_out_2, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                    input_data=model_out,
-                                                    sh=[1, 1],
-                                                    scope_n='layer_2_1')
+    rnn_out_2, _ = multi_dimensional_rnn_while_loop(
+        rnn_size=hidden_size, input_data=model_out, sh=[1, 1], scope_n='layer_2_1'
+    )
 
-    rnn_out_2_v, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                      input_data=model_out_v,
-                                                      sh=[1, 1],
-                                                      scope_n='layer_2_2')
+    rnn_out_2_v, _ = multi_dimensional_rnn_while_loop(
+        rnn_size=hidden_size, input_data=model_out_v, sh=[1, 1], scope_n='layer_2_2'
+    )
 
-    rnn_out_2_h, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                      input_data=model_out_h,
-                                                      sh=[1, 1],
-                                                      scope_n='layer_2_3')
+    rnn_out_2_h, _ = multi_dimensional_rnn_while_loop(
+        rnn_size=hidden_size, input_data=model_out_h, sh=[1, 1], scope_n='layer_2_3'
+    )
 
-    rnn_out_2_vh, _ = multi_dimensional_rnn_while_loop(rnn_size=hidden_size,
-                                                       input_data=model_out_vh,
-                                                       sh=[1, 1],
-                                                       scope_n='layer_2_4')
+    rnn_out_2_vh, _ = multi_dimensional_rnn_while_loop(
+        rnn_size=hidden_size, input_data=model_out_vh, sh=[1, 1], scope_n='layer_2_4'
+    )
 
     model_logits = slim.fully_connected(
-        inputs=tf.concat([rnn_out_2, rnn_out_2_v, rnn_out_2_h, rnn_out_2_vh],
-                         axis=3),
+        inputs=tf.concat([rnn_out_2, rnn_out_2_v, rnn_out_2_h, rnn_out_2_vh], axis=3),
         num_outputs=how_many_classes,
-        activation_fn=None)
+        activation_fn=None,
+    )
 
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.cast(y, tf.float32), logits=model_logits))
+    loss = tf.reduce_mean(
+        tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.cast(y, tf.float32), logits=model_logits)
+    )
     model_output = tf.nn.softmax(model_logits)
     grad_update = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
@@ -158,7 +149,7 @@ def train():
 
     for epoch in range(epochs):
         steps = num_images // batch_size
-        print('number of steps: {}'.format(steps))
+        print(f'number of steps: {steps}')
         for i in range(steps):
             idx_start = i * batch_size
             idx_end = (i + 1) * batch_size
@@ -170,15 +161,12 @@ def train():
             batch_y = data_y[idx_start:idx_end]
 
             model_preds, tot_loss_value, _ = sess.run(
-                [model_output, loss, grad_update], feed_dict={x: batch_x_orig,
-                                                           x_v: batch_x_v,
-                                                           x_h: batch_x_h,
-                                                           x_vh: batch_x_vh,
-                                                           y: batch_y})
-
+                [model_output, loss, grad_update],
+                feed_dict={x: batch_x_orig, x_v: batch_x_v, x_h: batch_x_h, x_vh: batch_x_vh, y: batch_y},
+            )
 
             # print('model preds: {}'.format(model_preds.shape))
-            print('total_loss_value: {}'.format(tot_loss_value))
+            print(f'total_loss_value: {tot_loss_value}')
             print(model_preds.shape)
 
             # output_image = np.argmax(model_preds[0], axis=2)
@@ -220,8 +208,10 @@ def train():
 
                 plt.tight_layout()
                 plt.savefig(
-                    '/home/pseweryn/Projects/multidimensional_lstm/repository/results/md_lstm/two_step_md_lstm/image_{}_{}.jpg'.format(
-                        epoch, i), bbox_inches='tight', dpi=100)
+                    f'/home/pseweryn/Projects/multidimensional_lstm/repository/results/md_lstm/two_step_md_lstm/image_{epoch}_{i}.jpg',
+                    bbox_inches='tight',
+                    dpi=100,
+                )
                 plt.close()
                 # plt.show()
 
@@ -269,7 +259,7 @@ def train():
             |      x <----- extract this prediction. Relevant loss is only computed for this value.
             |__________|    we don't care about the rest (even though the model is trained on all values
                             for simplicity). A standard LSTM should have a very high value for relevant loss
-                            whereas a MD LSTM (which can see all the TOP LEFT corner) should perform well. 
+                            whereas a MD LSTM (which can see all the TOP LEFT corner) should perform well.
             """
 
             # extract the predictions for the second x
@@ -295,8 +285,7 @@ def train():
 
 def main():
     # args = get_script_arguments()
-    logging.basicConfig(format='%(asctime)12s - %(levelname)s - %(message)s',
-                        level=logging.INFO)
+    logging.basicConfig(format='%(asctime)12s - %(levelname)s - %(message)s', level=logging.INFO)
     train()
 
 

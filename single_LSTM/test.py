@@ -1,16 +1,11 @@
 import os
 
-from keras.engine import Model
-from keras.models import load_model
-import numpy as np
-from keras.optimizers import Adam
-
-from single_LSTM.custom_loss_function import class_weighted_pixelwise_crossentropy
-from single_LSTM.data_generator import DataGenerator
-from single_LSTM.models import build_model, get_model_with_layer
-from classes_pascal import pascal_ids
-from utils.images import Dataset
 import matplotlib.pyplot as plt
+from keras.engine import Model
+
+from classes_pascal import pascal_ids
+from single_LSTM.models import build_model, get_model_with_layer
+from utils.images import Dataset
 
 plt.rcParams.update({'font.size': 6})
 
@@ -107,8 +102,7 @@ def validate(model: Model, batch_size, layer):
                 ax[col].imshow(y[i, :, :, col + row * ncols], vmin=0, vmax=1)
                 ax[col].set_title(pascal_ids[col + row * ncols])
                 ax[col].axis('off')
-        fig.savefig(
-            os.path.join(save_segmentation_true_dir, 'seg_true_iteration_{}.jpg'.format(i)))
+        fig.savefig(os.path.join(save_segmentation_true_dir, f'seg_true_iteration_{i}.jpg'))
         plt.close(fig)
 
         # fig, ax = plt.subplots(nrows, ncols)
@@ -134,14 +128,15 @@ def validate(model: Model, batch_size, layer):
 
 
 if __name__ == '__main__':
-
     model = build_model(90, 90, 27)
     model.load_weights(
-        '/home/pseweryn/Projects/multidimensional_lstm/repository/models/one_class_only_without_permute/weights.01-0.4970.hdf5')
+        '/home/pseweryn/Projects/multidimensional_lstm/repository/models/one_class_only_without_permute/weights.01-0.4970.hdf5'
+    )
     layers = ['lambda_16']
 
     for layer in layers:
         model = get_model_with_layer(
             '/home/pseweryn/Projects/multidimensional_lstm/repository/models/one_class_only/weights.03-0.4766.hdf5',
-            layer)
+            layer,
+        )
     validate(model, batch_size=1, layer=layer)

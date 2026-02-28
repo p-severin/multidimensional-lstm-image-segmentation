@@ -1,10 +1,11 @@
 from keras import Sequential
-from keras.layers import Reshape, Bidirectional, Permute, Dense, LSTM
+from keras.layers import LSTM, Bidirectional, Dense, Permute, Reshape
 
 rows = 96
 cols = 96
 channels = 3
 classes = 21
+
 
 def build_model():
     model = Sequential()
