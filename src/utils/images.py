@@ -1,63 +1,54 @@
 import os
-import sklearn
 from functools import partial
+from typing import ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PIL import Image
 from skimage.util import view_as_windows
-from sklearn.externals._pilutil import imresize
-from tensorflow.python.keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 
-from sys import platform
-
-if platform == 'linux':
-    directory_voc_dataset = '/home/pseweryn/Repositories/VOCdevkit/VOC2012'
-else:
-    directory_voc_dataset = '/Users/patrykseweryn/PycharmProjects/datasets/voc_dataset/VOCtrainval_11-May-2012/VOCdevkit/VOC2012'
+from utils.data_generator import imresize
+from utils.pascal_voc import rgb_mask_to_indices
 
 
 class Dataset:
-    extensions = dict(image='.jpg',
-                      segmentation='.png',
-                      annotations='.txt')
+    extensions: ClassVar[dict] = dict(image='.jpg', segmentation='.png', annotations='.txt')
 
     def __init__(self, directory_images: str, subset: str, chosen_classes: list, image_shape=(270, 270)):
         self.main_directory = partial(os.path.join, directory_images)
-        self.directories = dict(image=self.main_directory('JPEGImages'),
-                                segmentation=self.main_directory(
-                                    'SegmentationClass'),
-                                annotations=self.main_directory(
-                                    'ImageSets/Segmentation'))
+        self.directories = dict(
+            image=self.main_directory('JPEGImages'),
+            segmentation=self.main_directory('SegmentationClass'),
+            annotations=self.main_directory('ImageSets/Segmentation'),
+        )
         self.subset = subset
         self.chosen_classes = chosen_classes
         self.image_shape = image_shape
         self.segmentation_shape = (self.image_shape[0] // 3, self.image_shape[1] // 3)
         self.files = self.__get_image_numbers()
-        self.original_images = []
-        self.X = []
-        self.X_vertical = []
-        self.X_horizontal = []
-        self.X_both_transformations = []
-        self.y = []
+        self.original_images: list | np.ndarray = []
+        self.X: list | np.ndarray = []
+        self.X_vertical: list | np.ndarray = []
+        self.X_horizontal: list | np.ndarray = []
+        self.X_both_transformations: list | np.ndarray = []
+        self.y: list | np.ndarray = []
 
     def __get_image_numbers(self):
-
         if self.subset not in ['train', 'trainval', 'val']:
             raise Exception('No such data subset exists.')
 
-        train_file = os.path.join(self.directories['annotations'],
-                                  self.subset + self.extensions['annotations'])
+        train_file = os.path.join(self.directories['annotations'], self.subset + self.extensions['annotations'])
         csv_data = pd.read_csv(train_file, header=None)
-        return csv_data.values.reshape((-1))
+        return csv_data.values.reshape(-1)
 
     def __open_image(self, file_name, image_type):
-        image_path = os.path.join(self.directories[image_type],
-                                  file_name + self.extensions[image_type])
+        image_path = os.path.join(self.directories[image_type], file_name + self.extensions[image_type])
         image = Image.open(image_path)
-        image = np.array(image)
-        return image
+        if image_type == 'segmentation':
+            return rgb_mask_to_indices(np.array(image.convert('RGB'), dtype=np.uint8))
+        return np.array(image)
 
     def generate_images(self, how_many_images: int):
         if how_many_images == -1:
@@ -76,6 +67,7 @@ class Dataset:
         self.y = [imresize(image, self.segmentation_shape, interp='nearest') for image in self.y]
 
     def remove_classes_not_used(self):
+        assert isinstance(self.y, np.ndarray)
         classes_to_be_removed = list(np.unique(self.y))
         classes_to_be_removed = [x for x in classes_to_be_removed if x not in self.chosen_classes]
         print(classes_to_be_removed)
@@ -90,7 +82,7 @@ class Dataset:
         self.y = np.array(self.y)
 
     def prepare_input_data_X(self):
-        self.X = np.multiply(self.X, 1. / 255)
+        self.X = np.multiply(self.X, 1.0 / 255)
 
     def create_flipped_windows(self):
         self.X_vertical = np.flip(self.X, axis=1)
@@ -105,7 +97,7 @@ class Dataset:
     def leave_images_of_one_class(self):
         newX = []
         newY = []
-        for image, segmentation in zip(self.X, self.y):
+        for image, segmentation in zip(self.X, self.y, strict=False):
             for chosen_class in self.chosen_classes:
                 if chosen_class in np.unique(segmentation):
                     newX.append(image)
@@ -125,14 +117,15 @@ class Dataset:
         self.X = [self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in self.X]
         self.X_vertical = [self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in self.X_vertical]
         self.X_horizontal = [self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in self.X_horizontal]
-        self.X_both_transformations = [self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in
-                                       self.X_both_transformations]
+        self.X_both_transformations = [
+            self.divide_image_into_patches(image, rgb_shape, rgb_step) for image in self.X_both_transformations
+        ]
         self.y = [self.divide_image_into_patches(image, segmentation_shape, segmentation_step) for image in self.y]
 
     def one_hot_encode_y(self):
         self.y = to_categorical(self.y, num_classes=len(self.chosen_classes) + 1)
 
-    def generate_data(self, how_many_images):
+    def generate_data(self, how_many_images=-1):
         self.generate_images(how_many_images=how_many_images)
         self.resize_images()
         self.transform_data_to_numpy_arrays()
@@ -154,26 +147,7 @@ class Dataset:
 
 
 if __name__ == '__main__':
-    dataset = Dataset(directory_voc_dataset, 'train', [7])
-    # dataset.generate_images(-1)
-    # dataset.resize_images()
-    # dataset.transform_data_to_numpy_arrays()
-    # dataset.remove_classes_not_used()
-    # dataset.leave_images_of_one_class()
-    # dataset.prepare_input_data_X()
-    # dataset.create_flipped_windows()
-    # dataset.extract_patches_from_data()
-    # dataset.transform_data_to_numpy_arrays()
-    # dataset.one_hot_encode_y()
-
-    X, y = dataset.generate_data()
-
-    for image, segmentation in zip(X, y):
-        plt.subplot(121)
-        plt.imshow(image)
-        plt.subplot(122)
-        plt.imshow(segmentation[:, :, 1])
-        plt.show()
-
-    print(X.shape)
-    print(y.shape)
+    data_dir = 'data/voc_2012_segmentation_data'
+    # Note: Dataset class still uses old VOC2012 structure (JPEGImages/, SegmentationClass/, ImageSets/)
+    # Use DataGenerator from single_lstm.data_generator for the new dataset format instead.
+    print('Dataset class is deprecated. Use single_lstm.data_generator.DataGenerator instead.')
