@@ -41,3 +41,20 @@ if __name__ == '__main__':
     model.add(Dense(n_features, activation='softmax'))
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     model.summary()
+
+    for _ in range(5000):
+        X, y = generate_example(length, n_features, out_index)
+        model.train_on_batch(X, y)
+
+    correct = 0
+    for _ in range(100):
+        X, y = generate_example(length, n_features, out_index)
+        y_pred = model.predict(X, verbose=0)
+        if one_hot_decode(y) == one_hot_decode(y_pred):
+            correct += 1
+    print(f'Accuracy: {correct}%')
+
+    for _ in range(5):
+        X, y = generate_example(length, n_features, out_index)
+        y_pred = model.predict(X, verbose=0)
+        print(f'Expected: {one_hot_decode(y)[0]}, Got: {one_hot_decode(y_pred)[0]}')
